@@ -37,6 +37,7 @@ void rcv_imu_callback(float w[3], float a[3])
 void rcv_state_callback(float state[13])
 {
     nav_msgs::Odometry odom;
+    odom.header.stamp = ros::Time::now();
     odom.pose.pose.position.x = state[0];
     odom.pose.pose.position.y = state[1];
     odom.pose.pose.position.z = state[2];
@@ -92,8 +93,8 @@ int main(int argc, char** argv)
         exit(-1);
     }
 
-    quad.setup_optitrack("192.168.1.200");
-    quad.add_fordwarding("192.168.1.22", 8976, "192.168.1.35", 14550);
+    // quad.setup_optitrack("192.168.1.200");
+    quad.add_fordwarding("192.168.1.36", 8976, "192.168.1.40", 14550);
     // quad.add_fordwarding("127.0.0.1", 8976, "127.0.0.1", 14550);
     quad.core_start();
 

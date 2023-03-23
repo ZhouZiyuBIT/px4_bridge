@@ -30,16 +30,18 @@ def thrust_rates_cb(msg:ThrustRates):
 
 thrust_rates_sub = rospy.Subscriber("~thrust_rates", ThrustRates, callback=thrust_rates_cb, queue_size=1, tcp_nodelay=True)
 
-quad = QuadrotorModel(BASEPATH+"config/quad_real.yaml")
+quad = QuadrotorModel(BASEPATH+"config/quad_px4.yaml")
 q_sim = QuadrotorSim(quad)
 
 tf_br = tf.TransformBroadcaster(queue_size=1)
 odom_pub = rospy.Publisher("~odom", Odometry, tcp_nodelay=True, queue_size=1)
 
+cnt = 0
 def sim_run(e):
     # rospy.loginfo("run")
-    global thrust_rates_msg
-    
+    global thrust_rates_msg, cnt
+    cnt += 1
+
     if thrust_rates_msg != None:
 
         u = np.zeros(4)
@@ -68,7 +70,8 @@ def sim_run(e):
         odom_msg.twist.twist.angular.z = q_state[12]
         odom_pub.publish(odom_msg)
 
-        tf_br.sendTransform((q_state[1],q_state[0],-q_state[2]), (q_state[8],q_state[7],-q_state[9],q_state[6]), rospy.Time.now(), "quad_body", "world")
+        if cnt%3 == 0:
+            tf_br.sendTransform((q_state[1],q_state[0],-q_state[2]), (q_state[8],q_state[7],-q_state[9],q_state[6]), rospy.Time.now(), "quad_body", "world")
     pass
     
 

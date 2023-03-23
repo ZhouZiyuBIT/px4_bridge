@@ -341,7 +341,7 @@ void Px4Bridge::_core_run()
 
             mavlink_attitude_t attitude;
             mavlink_odometry_t q_state;
-            // mavlink_sensor_imu_t s_imu;
+            mavlink_highres_imu_t s_imu;
             mavlink_debug_t dv;
 
             // We enter here if (fds[0].revents & POLLIN) == true
@@ -394,24 +394,24 @@ void Px4Bridge::_core_run()
                         }
                         break;
 
-                        // case MAVLINK_MSG_ID_SENSOR_IMU:
-                        // {
-                        //     mavlink_msg_sensor_imu_decode(&msg, &s_imu);
-                        //     // std::cout << "received imu" << std::endl;
-                        //     if(_rcv_sensor_imu_handler)
-                        //     {
-                        //         float w[3];
-                        //         float a[3];
-                        //         w[0] = s_imu.wx;
-                        //         w[1] = s_imu.wy;
-                        //         w[2] = s_imu.wz;
-                        //         a[0] = s_imu.ax;
-                        //         a[1] = s_imu.ay;
-                        //         a[2] = s_imu.az;
-                        //         _rcv_sensor_imu_handler(w, a);
-                        //     }
-                        // }
-                        // break;
+                        case MAVLINK_MSG_ID_HIGHRES_IMU:
+                        {
+                            mavlink_msg_highres_imu_decode(&msg, &s_imu);
+                            // std::cout << "received imu" << std::endl;
+                            if(_rcv_sensor_imu_handler)
+                            {
+                                float w[3];
+                                float a[3];
+                                w[0] = s_imu.xgyro;
+                                w[1] = s_imu.ygyro;
+                                w[2] = s_imu.zgyro;
+                                a[0] = s_imu.xacc;
+                                a[1] = s_imu.yacc;
+                                a[2] = s_imu.zacc;
+                                _rcv_sensor_imu_handler(w, a);
+                            }
+                        }
+                        break;
 
                         case MAVLINK_MSG_ID_ODOMETRY:
                         //     // tim.Toc();
