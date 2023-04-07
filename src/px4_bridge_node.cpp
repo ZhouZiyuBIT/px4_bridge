@@ -6,6 +6,7 @@
 #include<ros/ros.h>
 #include<sensor_msgs/Imu.h>
 #include<nav_msgs/Odometry.h>
+#include<geometry_msgs/Point.h>
 #include"px4_bridge/ThrustRates.h"
 #include<tf/transform_broadcaster.h>
 
@@ -13,6 +14,7 @@ Px4Bridge quad;
 
 ros::Publisher _imu_pub;
 ros::Publisher _state_pub;
+ros::Publisher _dynamic_gate_pub;
 ros::Subscriber _slam_odom_sub;
 ros::Subscriber _thrust_rates_sub;
 tf::TransformBroadcaster* tf_br;
@@ -59,6 +61,15 @@ void rcv_state_callback(float state[13])
     tf_br->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "quad_body"));
 }
 
+void rcv_dynamic_gate_callback(float pos[3], float quat[4])
+{
+    geometry_msgs::Point gate;
+    gate.x = pos[0];
+    gate.y = pos[1];
+    gate.z = pos[2];
+    _dynamic_gate_pub.publish(gate);
+}
+
 void rcv_slam_odom_cb(nav_msgs::Odometry msg)
 {
     quad.send_odom_data(msg.pose.pose.position.x, -msg.pose.pose.position.y, -msg.pose.pose.position.z,
@@ -78,6 +89,7 @@ int main(int argc, char** argv)
 
     _imu_pub = n.advertise<sensor_msgs::Imu>("imu", 1);
     _state_pub = n.advertise<nav_msgs::Odometry>("odom", 1);
+    _dynamic_gate_pub = n.advertise<geometry_msgs::Point>("/dynamic_gate", 1);
     _slam_odom_sub = n.subscribe("slam_odom", 1, rcv_slam_odom_cb, ros::TransportHints().tcpNoDelay());
     _thrust_rates_sub = n.subscribe("thrust_rates", 1, rcv_thrust_rates_cb, ros::TransportHints().tcpNoDelay());
     // _slam_odom_sub = n.subscribe("slam_odom", 1, rcv_slam_odom_cb);
@@ -86,6 +98,7 @@ int main(int argc, char** argv)
 
     quad.registe_rcv_state_callback(rcv_state_callback);
     quad.registe_rcv_sensor_imu_callback(rcv_imu_callback);
+    quad.registe_rcv_dynamic_object_callback(rcv_dynamic_gate_callback);
 
     quad.set_thread_rt(90);
     if(quad.setup_port("/dev/ttyACM0") == -1)

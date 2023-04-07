@@ -44,6 +44,7 @@ class Px4Bridge
 {
     using state_callback_f = std::function<void(float state[13])>;
     using sensor_imu_callback_f = std::function<void(float w[3], float a[3])>;
+    using dynamic_object_callback_f = std::function<void(float pos[3], float q[4])>;
 public:
     Px4Bridge(){}
     ~Px4Bridge();
@@ -55,6 +56,7 @@ public:
 
     void registe_rcv_state_callback(const state_callback_f &handler);
     void registe_rcv_sensor_imu_callback(const sensor_imu_callback_f &handler);
+    void registe_rcv_dynamic_object_callback(const dynamic_object_callback_f &handler);
     int send_control_u(float thrust_sp, float wx_sp, float wy_sp, float wz_sp);
     void send_odom_data(float pos_x, float pos_y, float pos_z,
                          float qw, float qx, float qy, float qz);
@@ -68,6 +70,7 @@ private:
 
     state_callback_f _rcv_state_handler = nullptr;
     sensor_imu_callback_f _rcv_sensor_imu_handler = nullptr;
+    dynamic_object_callback_f _rcv_dynamic_object_handler = nullptr;
 
     TicToc tim;
     /*

@@ -18,6 +18,16 @@ import os, sys
 BASEPATH = os.path.abspath(__file__).split('script', 1)[0]
 # sys.path += [BASEPATH]
 
+class LP_delay():
+    def __init__(self, wc, ts):
+        self._alpha = 1/(wc*ts+1)
+        self._yk_ = 0
+    
+    def update(self, xk):
+        yk = self._alpha*self._yk_ + (1-self._alpha)*xk
+        self._yk_ = yk
+        return yk
+
 #######################################################################################################
 rospy.init_node("q_sim")
 rospy.loginfo("ROS: Hello")
@@ -30,11 +40,16 @@ def thrust_rates_cb(msg:ThrustRates):
 
 thrust_rates_sub = rospy.Subscriber("~thrust_rates", ThrustRates, callback=thrust_rates_cb, queue_size=1, tcp_nodelay=True)
 
-quad = QuadrotorModel(BASEPATH+"config/quad_px4.yaml")
+quad = QuadrotorModel(BASEPATH+"config/quad_real.yaml")
 q_sim = QuadrotorSim(quad)
-
+q_sim.set_pos(np.array([-4,-3,-2]))
 tf_br = tf.TransformBroadcaster(queue_size=1)
 odom_pub = rospy.Publisher("~odom", Odometry, tcp_nodelay=True, queue_size=1)
+
+delay = LP_delay(30, 0.01)
+delay_wx = LP_delay(20, 0.01)
+delay_wy = LP_delay(20, 0.01)
+delay_wz = LP_delay(20, 0.01)
 
 cnt = 0
 def sim_run(e):
@@ -45,13 +60,13 @@ def sim_run(e):
     if thrust_rates_msg != None:
 
         u = np.zeros(4)
-        u[0] = thrust_rates_msg.thrust*quad._T_max  
-        u[1] = thrust_rates_msg.wx
-        u[2] = thrust_rates_msg.wy
-        u[3] = thrust_rates_msg.wz
+        u[0] = delay.update((thrust_rates_msg.thrust)*quad._T_max)  
+        u[1] = delay_wx.update(thrust_rates_msg.wx)
+        u[2] = delay_wy.update(thrust_rates_msg.wy)
+        u[3] = delay_wz.update(thrust_rates_msg.wz)
         q_sim.step10ms(u)
 
-        q_state = q_sim._X
+        q_state = q_sim.get_state()
         odom_msg = Odometry()
         odom_msg.header.frame_id="world"
         odom_msg.header.stamp = rospy.Time.now()

@@ -150,6 +150,13 @@ void NATNET_CALLCONV Px4Bridge::MessageHandler( Verbosity msgType, const char* m
     std::cout << msg << std::endl;
 }
 
+const int FRAME_T[3][3]=
+{
+    { 0, 0, 1},
+    {-1, 0, 0},
+    { 0,-1, 0}
+};
+const float OFFSET_T[3] = {8.76,-0.54,-0.26};
 void NATNET_CALLCONV Px4Bridge::DataHandler(sFrameOfMocapData* data, void* pUserData)
 {
     Px4Bridge *ppx4bridge = (Px4Bridge*) pUserData;
@@ -165,9 +172,15 @@ void NATNET_CALLCONV Px4Bridge::DataHandler(sFrameOfMocapData* data, void* pUser
             // ppx4bridge->send_odom_data(-data->RigidBodies[i].y, -data->RigidBodies[i].x, -data->RigidBodies[i].z,
             //                             data->RigidBodies[i].qw,
             //                             -data->RigidBodies[i].qy, -data->RigidBodies[i].qx, -data->RigidBodies[i].qz);
-            ppx4bridge->send_odom_data(data->RigidBodies[i].z-8.76, -data->RigidBodies[i].x+0.54, -data->RigidBodies[i].y+0.26,
-                                        data->RigidBodies[i].qw,
-                                        data->RigidBodies[i].qz, -data->RigidBodies[i].qx, -data->RigidBodies[i].qy);
+            float x = data->RigidBodies[i].x*FRAME_T[0][0] + data->RigidBodies[i].y*FRAME_T[0][1] + data->RigidBodies[i].z*FRAME_T[0][2] - OFFSET_T[0];
+            float y = data->RigidBodies[i].x*FRAME_T[1][0] + data->RigidBodies[i].y*FRAME_T[1][1] + data->RigidBodies[i].z*FRAME_T[1][2] - OFFSET_T[1];
+            float z = data->RigidBodies[i].x*FRAME_T[2][0] + data->RigidBodies[i].y*FRAME_T[2][1] + data->RigidBodies[i].z*FRAME_T[2][2] - OFFSET_T[2];
+            float qw = data->RigidBodies[i].qw;
+            float qx = data->RigidBodies[i].qx*FRAME_T[0][0] + data->RigidBodies[i].qy*FRAME_T[0][1] + data->RigidBodies[i].qz*FRAME_T[0][2];
+            float qy = data->RigidBodies[i].qx*FRAME_T[1][0] + data->RigidBodies[i].qy*FRAME_T[1][1] + data->RigidBodies[i].qz*FRAME_T[1][2];
+            float qz = data->RigidBodies[i].qx*FRAME_T[2][0] + data->RigidBodies[i].qy*FRAME_T[2][1] + data->RigidBodies[i].qz*FRAME_T[2][2];
+            ppx4bridge->send_odom_data(x, y, z, qw, qx, qy, qz);
+
             printf("%3.2f %3.2f %3.2f %3.2f %3.2f %3.2f %3.2f\n",
 		    	data->RigidBodies[i].x,
 		    	data->RigidBodies[i].y,
@@ -176,6 +189,22 @@ void NATNET_CALLCONV Px4Bridge::DataHandler(sFrameOfMocapData* data, void* pUser
 		    	data->RigidBodies[i].qy,
 		    	data->RigidBodies[i].qz,
 		    	data->RigidBodies[i].qw);
+        }
+        else if(data->RigidBodies[i].ID == 9)
+        {
+            if(ppx4bridge->_rcv_dynamic_object_handler)
+            {
+                float _pos[3];
+                _pos[0] = data->RigidBodies[i].x*FRAME_T[0][0] + data->RigidBodies[i].y*FRAME_T[0][1] + data->RigidBodies[i].z*FRAME_T[0][2] - OFFSET_T[0];
+                _pos[1] = data->RigidBodies[i].x*FRAME_T[1][0] + data->RigidBodies[i].y*FRAME_T[1][1] + data->RigidBodies[i].z*FRAME_T[1][2] - OFFSET_T[1];
+                _pos[2] = data->RigidBodies[i].x*FRAME_T[2][0] + data->RigidBodies[i].y*FRAME_T[2][1] + data->RigidBodies[i].z*FRAME_T[2][2] - OFFSET_T[2];
+                float _quat[4];
+                _quat[0] = data->RigidBodies[i].qw;
+                _quat[1] = data->RigidBodies[i].qx*FRAME_T[0][0] + data->RigidBodies[i].qy*FRAME_T[0][1] + data->RigidBodies[i].qz*FRAME_T[0][2];
+                _quat[2] = data->RigidBodies[i].qx*FRAME_T[1][0] + data->RigidBodies[i].qy*FRAME_T[1][1] + data->RigidBodies[i].qz*FRAME_T[1][2];
+                _quat[3] = data->RigidBodies[i].qx*FRAME_T[2][0] + data->RigidBodies[i].qy*FRAME_T[2][1] + data->RigidBodies[i].qz*FRAME_T[2][2];
+                ppx4bridge->_rcv_dynamic_object_handler(_pos, _quat);
+            }
         }
 
         // params
@@ -310,6 +339,10 @@ void Px4Bridge::registe_rcv_state_callback(const state_callback_f &handler)
 void Px4Bridge::registe_rcv_sensor_imu_callback(const sensor_imu_callback_f &handler)
 {
     _rcv_sensor_imu_handler = handler;
+}
+void Px4Bridge::registe_rcv_dynamic_object_callback(const dynamic_object_callback_f &handler)
+{
+    _rcv_dynamic_object_handler = handler;
 }
 
 void Px4Bridge::_core_run()

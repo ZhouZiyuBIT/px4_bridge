@@ -330,12 +330,18 @@ class QuadrotorSim(object):
         self._X[6] = 1
         self._T = np.zeros(4)
         
-        self._pid_wx = PID(15, 0.2, 0, 7, 7)
-        self._pid_wy = PID(15, 0.2, 0, 7, 7)
-        self._pid_wz = PID(20, 0.3, 0, 7, 7)
+        self._pid_wx = PID(15, 0.2, 0, 8, 8)
+        self._pid_wy = PID(15, 0.2, 0, 8, 8)
+        self._pid_wz = PID(20, 0.3, 0, 8, 8)
         
         self._T_min = quad._T_min
         self._T_max = quad._T_max
+    
+    def set_pos(self, pos):
+        self._X[0:3] = pos
+        
+    def get_state(self):
+      return self._X+np.random.uniform(-1, 1, 13)*np.array([0.0, 0.0, 0.0, 0.08, 0.08, 0.08, 0, 0, 0, 0, 0.1, 0.1, 0.1])
     
     # [thrust, wx, wy, wz]
     def low_ctrl(self, U):
@@ -351,10 +357,10 @@ class QuadrotorSim(object):
         T3 = U[0] - Tx + Ty + Tz
         T4 = U[0] + Tx - Ty + Tz
         
-        self._T[0] = constrain(T1, self._T_min, self._T_max)
-        self._T[1] = constrain(T2, self._T_min, self._T_max)
-        self._T[2] = constrain(T3, self._T_min, self._T_max)
-        self._T[3] = constrain(T4, self._T_min, self._T_max)
+        self._T[0] = constrain(T1, self._T_min, self._T_max+1)
+        self._T[1] = constrain(T2, self._T_min, self._T_max+1)
+        self._T[2] = constrain(T3, self._T_min, self._T_max+1)
+        self._T[3] = constrain(T4, self._T_min, self._T_max+1)
     
     # [thrust, wx, wy, wz]
     def step10ms(self, U):
