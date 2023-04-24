@@ -156,7 +156,7 @@ const int FRAME_T[3][3]=
     {-1, 0, 0},
     { 0,-1, 0}
 };
-const float OFFSET_T[3] = {8.76,-0.54,-0.26};
+const float OFFSET_T[3] = {0,0,0};
 void NATNET_CALLCONV Px4Bridge::DataHandler(sFrameOfMocapData* data, void* pUserData)
 {
     Px4Bridge *ppx4bridge = (Px4Bridge*) pUserData;

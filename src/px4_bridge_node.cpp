@@ -107,7 +107,7 @@ int main(int argc, char** argv)
     }
 
     quad.setup_optitrack("192.168.1.200");
-    quad.add_fordwarding("192.168.1.22", 8976, "192.168.1.6", 14550);
+    quad.add_fordwarding("drone0", 8976, "192.168.1.40", 14550);
     // quad.add_fordwarding("127.0.0.1", 8976, "127.0.0.1", 14550);
     quad.core_start();
 
