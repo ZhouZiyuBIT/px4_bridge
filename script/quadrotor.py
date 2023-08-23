@@ -379,6 +379,10 @@ class QuadrotorSim(object):
     def step1ms(self):
         X_ = self._dyn_d(self._X, self._T)
         self._X = X_.full().flatten()
+        # ground contact
+        if self._X[2] > 0:
+          self._X[2] = 0
+          self._X[5] = -0.5*self._X[5]
         return self._X
 
 if __name__ == "__main__":
